@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# 功能     : 使用except无需输入密码自动登录ssh
+# Author   : fengsonglin
+# Date     : 2014/04/01
+
+#服务器配置项
+CONFIGS=(
+   "美国服务器 26390 67.218.150.143 root fengsonglin"
+   "北鱼服务器 22 192.168.31.50 root root 
+   "111服务器 22 172.17.250.111 root jianke@hadoop123"
+   "113服务器 22 172.17.250.113 root jianke@hadoop123"
+   "114服务器 22 172.17.250.114 root jianke@hadoop123"
+   "115服务器 22 172.17.250.115 root jianke@hadoop123"
+   "116服务器 22 172.17.250.116 root jianke@hadoop123"
+   "117服务器 22 172.17.250.117 root jianke@hadoop123"
+   "118服务器 22 172.17.250.118 root jianke@hadoop123"
+   "119服务器 22 172.17.250.119 root jianke@hadoop123"
+   "120服务器 22 172.17.250.120 root jianke@hadoop123"
+)
+
+#服务器配置数
+CONFIG_LENGTH=${#CONFIGS[*]}  #配置站点个数
+
+#登录菜单
+function LoginMenu(){
+
+    echo -e "\033[41;37m------请输入登录的服务器序号--------\033[0m"
+    for ((i=0;i<${CONFIG_LENGTH};i++));
+    do
+        CONFIG=(${CONFIGS[$i]}) #将一维sites字符串赋值到数组
+        serverNum=$(($i+1))
+        echo -e "\033[41;37m---(${serverNum})--${CONFIG[0]}(${CONFIG[2]})---\033[0m"
+    done
+    echo -e "\033[41;37m----请输入您选择登录的服务器序号:---\033[0m"
+}
+
+#选择登录的服务器
+function ChooseServer(){
+
+    read serverNum
+    if [[ $serverNum -gt $CONFIG_LENGTH ]] ;
+    then
+	echo -e "\033[41;37m 输入的序号不正确，请重新输入:\033[0m"
+        ChooseServer ;
+        return ;
+    fi
+    if [[ $serverNum -lt 1 ]] ;
+    then
+
+        echo -e "\033[41;37m输入的序号不正确，请重新输入:\33[0m"
+	ChooseServer ;
+        return ;
+    fi
+
+    AutoLogin $serverNum;
+}
+
+#自动登录
+function AutoLogin(){
+
+    num=$(($1-1))
+    CONFIG=(${CONFIGS[$num]})
+    echo -e "\033[41;37m 正在登录【${CONFIG[0]}】\033[0m"
+    expect -c "
+        spawn ssh -p ${CONFIG[1]} ${CONFIG[3]}@${CONFIG[2]}
+        expect {
+            \"*assword\" {set timeout 6000; send \"${CONFIG[4]}\n\"; exp_continue ; sleep 3; }
+            \"yes/no\" {send \"yes\n\"; exp_continue;}
+            \"Last*\" {  send_user \"\n成功登录【${CONFIG[0]}】\n\";}
+        }
+
+   interact"
+   echo "您已退出【${CONFIG[0]}】"
+
+}
+
+LoginMenu ;
+ChooseServer ;
